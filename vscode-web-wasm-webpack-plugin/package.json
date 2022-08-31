@@ -1,6 +1,6 @@
 {
   "name": "vscode-web-wasm-webpack-plugin",
-  "version": "0.1",
+  "version": "0.1.0",
   "description": "Webpack plugin for loading wasm in a way supported by vscode web extensions",
   "main": "dist/plugin.js",
   "types": "dist/plugin.d.ts",
