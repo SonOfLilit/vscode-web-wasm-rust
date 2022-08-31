@@ -11,11 +11,15 @@
 
 const path = require("path");
 const webpack = require("webpack");
+const ReadFileVSCodeWebCompileAsyncWasmPlugin = require("./plugin.js");
 
 /** @type WebpackConfig */
 const webExtensionConfig = {
   mode: "none", // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
   target: "webworker", // extensions run in a webworker context
+  experiments: {
+    asyncWebAssembly: true,
+  },
   entry: {
     extension: "./src/web/extension.ts",
     "test/suite/index": "./src/web/test/suite/index.ts",
@@ -25,6 +29,8 @@ const webExtensionConfig = {
     path: path.join(__dirname, "./dist/web"),
     libraryTarget: "commonjs",
     devtoolModuleFilenameTemplate: "../../[resource-path]",
+    enabledWasmLoadingTypes: ["async-vscode"],
+    wasmLoading: "async-vscode",
   },
   resolve: {
     mainFields: ["browser", "module", "main"], // look for `browser` entry point in imported node modules
@@ -59,6 +65,7 @@ const webExtensionConfig = {
     new webpack.ProvidePlugin({
       process: "process/browser", // provide a shim for the global `process` variable
     }),
+    new ReadFileVSCodeWebCompileAsyncWasmPlugin(),
   ],
   externals: {
     vscode: "commonjs vscode", // ignored because it doesn't exist
