@@ -3,24 +3,19 @@
 	Author Tobias Koppers @sokra, modified by Aur Saraf
 */
 
-"use strict";
-
-const webpack = require("webpack");
-const RuntimeGlobals = webpack.RuntimeGlobals;
-const Template = webpack.Template;
+import { RuntimeGlobals, Template } from "webpack";
+import * as webpack from "webpack";
 
 /** @typedef {import("webpack/Compiler")} Compiler */
 
 class VsCodeAsyncWasmLoadingRuntimeModule extends webpack.RuntimeModule {
-  constructor({ generateLoadBinaryCode }) {
+  generateLoadBinaryCode: (path: string) => string;
+  constructor(generateLoadBinaryCode: (path: string) => string) {
     super("wasm loading", webpack.RuntimeModule.STAGE_NORMAL);
     this.generateLoadBinaryCode = generateLoadBinaryCode;
   }
 
-  /**
-   * @returns {string} runtime code
-   */
-  generate() {
+  generate(): string {
     const { compilation, chunk } = this;
     const { outputOptions, runtimeTemplate } = compilation;
     const fn = RuntimeGlobals.instantiateWasm;
@@ -61,22 +56,25 @@ class VsCodeAsyncWasmLoadingRuntimeModule extends webpack.RuntimeModule {
   }
 }
 
-class ReadFileVsCodeWebCompileAsyncWasmPlugin {
+export class ReadFileVsCodeWebCompileAsyncWasmPlugin {
+  _type: string;
   constructor(type = "async-vscode") {
     this._type = type;
   }
-  /**
-   * Apply the plugin
-   * @param {Compiler} compiler the compiler instance
-   * @returns {void}
-   */
-  apply(compiler) {
-    webpack.wasm.EnableWasmLoadingPlugin.setEnabled(compiler, this._type);
+  apply(compiler: webpack.Compiler) {
+    try {
+      webpack.wasm.EnableWasmLoadingPlugin.setEnabled(compiler, this._type);
+    } catch (e) {
+      throw new Error(
+        "Problem calling webpack.wasm.EnableWasmLoadingPlugin.setEnabled(), are you sure you're running the patched version (or a newer version that accepted the PR that still doesn't exist as of the writing of this error message)?: " +
+          (e as Error).toString()
+      );
+    }
     compiler.hooks.thisCompilation.tap(
       "ReadFileVsCodeWebCompileAsyncWasmPlugin",
       (compilation) => {
         const globalWasmLoading = compilation.outputOptions.wasmLoading;
-        const isEnabledForChunk = (chunk) => {
+        const isEnabledForChunk = (chunk: webpack.Chunk) => {
           const options = chunk.getEntryOptions();
           const wasmLoading =
             options && options.wasmLoading !== undefined
@@ -84,7 +82,7 @@ class ReadFileVsCodeWebCompileAsyncWasmPlugin {
               : globalWasmLoading;
           return wasmLoading === this._type;
         };
-        const generateLoadBinaryCode = (path) =>
+        const generateLoadBinaryCode = (wasmModulePath: string) =>
           Template.asString([
             "var wasmPath = __webpack_require__.p + wasmModuleHash + '.module.wasm';",
             "var req = vscode.workspace.fs.readFile(vscode.Uri.file(wasmPath));",
@@ -106,14 +104,10 @@ class ReadFileVsCodeWebCompileAsyncWasmPlugin {
             set.add(RuntimeGlobals.publicPath);
             compilation.addRuntimeModule(
               chunk,
-              new VsCodeAsyncWasmLoadingRuntimeModule({
-                generateLoadBinaryCode,
-              })
+              new VsCodeAsyncWasmLoadingRuntimeModule(generateLoadBinaryCode)
             );
           });
       }
     );
   }
 }
-
-module.exports = ReadFileVsCodeWebCompileAsyncWasmPlugin;

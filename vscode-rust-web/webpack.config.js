@@ -11,7 +11,7 @@
 
 const path = require("path");
 const webpack = require("webpack");
-const ReadFileVSCodeWebCompileAsyncWasmPlugin = require("./plugin.js");
+const wasmPlugin = require("vscode-web-wasm-webpack-plugin");
 
 /** @type WebpackConfig */
 const webExtensionConfig = {
@@ -65,7 +65,7 @@ const webExtensionConfig = {
     new webpack.ProvidePlugin({
       process: "process/browser", // provide a shim for the global `process` variable
     }),
-    new ReadFileVSCodeWebCompileAsyncWasmPlugin(),
+    new wasmPlugin.ReadFileVsCodeWebCompileAsyncWasmPlugin(),
   ],
   externals: {
     vscode: "commonjs vscode", // ignored because it doesn't exist
