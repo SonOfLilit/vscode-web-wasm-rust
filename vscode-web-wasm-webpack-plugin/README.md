@@ -12,7 +12,7 @@ npm i vscode-web-wasm-webpack-plugin
 
 In `webpack.config.js`:
 
-```
+```javascript
 const wasmPlugin = require("vscode-web-wasm-webpack-plugin");
 
 const webExtensionConfig = {
@@ -22,6 +22,23 @@ const webExtensionConfig = {
     new wasmPlugin.ReadFileVsCodeWebCompileAsyncWasmPlugin(),
   ],
 ...
+```
+
+In `web/extension.ts`:
+
+```typescript
+export function activate(context: vscode.ExtensionContext) {
+  __webpack_public_path__ =
+    context.extensionUri.toString().replace("file:///", "") + "/dist/web/";
+  // ..
+
+  // the require() must happen after __webpack_public_path__ has been set, so can't happen in the global scope, but it doesn't have to be in this function
+  require("rust-wasm").then((rust: any) => {
+    vscode.window.showInformationMessage(rust.greet());
+  });
+
+  // ..
+}
 ```
 
 This was the longest task in the history of my Regex Syntax for Humans project, [Kleenexp](https://github.com/SonOfLilit/kleenexp), longer that writing the compiler or porting it to rust or writing a vscode extension. It took almost a week of banging my head against the wall to find a way to achieve this. So if this was useful to you, please drop me a word to help me feel like I was doing something useful :-)
