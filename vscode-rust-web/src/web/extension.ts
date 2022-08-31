@@ -12,20 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
     "vscode-rust-web.helloWorld",
     () => {
       require("rust-wasm").then((rust: any) => {
-        console.log("imported", rust);
-        console.log("imported transpile", rust.transpile);
         vscode.window.showInformationMessage(rust.greet());
-        /*
-        let wasmModuleHash = () => {
-          var vscode = require("vscode");
-          var wasmPath =
-            __webpack_require__.p + "" + wasmModuleHash + ".module.wasm";
-          console.log("reading from", wasmPath);
-          var req = vscode.workspace.fs.readFile(vscode.Uri.file(wasmPath));
-          return req
-            .then((bytes) => WebAssembly.instantiate(bytes, importsObj))
-            .then((res) => Object.assign(exports, res.instance.exports));
-        }; */
       });
     }
   );

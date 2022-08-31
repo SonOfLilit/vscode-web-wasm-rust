@@ -12,10 +12,9 @@ const Template = webpack.Template;
 /** @typedef {import("webpack/Compiler")} Compiler */
 
 class VsCodeAsyncWasmLoadingRuntimeModule extends webpack.RuntimeModule {
-  constructor({ generateLoadBinaryCode, supportsStreaming }) {
+  constructor({ generateLoadBinaryCode }) {
     super("wasm loading", webpack.RuntimeModule.STAGE_NORMAL);
     this.generateLoadBinaryCode = generateLoadBinaryCode;
-    this.supportsStreaming = supportsStreaming;
   }
 
   /**
@@ -44,25 +43,10 @@ class VsCodeAsyncWasmLoadingRuntimeModule extends webpack.RuntimeModule {
     return `${fn} = ${runtimeTemplate.basicFunction(
       "exports, wasmModuleId, wasmModuleHash, importsObj",
       [
-        `var req = ${this.generateLoadBinaryCode(wasmModuleSrcPath)};`,
-        this.supportsStreaming
-          ? Template.asString([
-              "if (typeof WebAssembly.instantiateStreaming === 'function') {",
-              Template.indent([
-                "return WebAssembly.instantiateStreaming(req, importsObj)",
-                Template.indent([
-                  `.then(${runtimeTemplate.returningFunction(
-                    "Object.assign(exports, res.instance.exports)",
-                    "res"
-                  )});`,
-                ]),
-              ]),
-              "}",
-            ])
-          : "// no support for streaming compilation",
+        "var vscode = require('vscode');",
+        `${this.generateLoadBinaryCode(wasmModuleSrcPath)};`,
         "return req",
         Template.indent([
-          `.then(${runtimeTemplate.returningFunction("x.arrayBuffer()", "x")})`,
           `.then(${runtimeTemplate.returningFunction(
             "WebAssembly.instantiate(bytes, importsObj)",
             "bytes"
@@ -78,9 +62,8 @@ class VsCodeAsyncWasmLoadingRuntimeModule extends webpack.RuntimeModule {
 }
 
 class ReadFileVsCodeWebCompileAsyncWasmPlugin {
-  constructor({ type = "async-vscode", import: useImport = false } = {}) {
+  constructor(type = "async-vscode") {
     this._type = type;
-    this._import = useImport;
   }
   /**
    * Apply the plugin
@@ -101,48 +84,11 @@ class ReadFileVsCodeWebCompileAsyncWasmPlugin {
               : globalWasmLoading;
           return wasmLoading === this._type;
         };
-        const generateLoadBinaryCode = this._import
-          ? (path) =>
-              Template.asString([
-                "Promise.all([import('fs'), import('url')]).then(([{ readFile }, { URL }]) => new Promise((resolve, reject) => {",
-                Template.indent([
-                  `readFile(new URL(${path}, import.meta.url), (err, buffer) => {`,
-                  Template.indent([
-                    "if (err) return reject(err);",
-                    "",
-                    "// Fake fetch response",
-                    "resolve({",
-                    Template.indent(["arrayBuffer() { return buffer; }"]),
-                    "});",
-                  ]),
-                  "});",
-                ]),
-                "}))",
-              ])
-          : (path) =>
-              Template.asString([
-                "new Promise(function (resolve, reject) {",
-                Template.indent([
-                  "try {",
-                  Template.indent([
-                    "var { readFile } = require('fs');",
-                    "var { join } = require('path');",
-                    "",
-                    `readFile(join(__dirname, ${path}), function(err, buffer){`,
-                    Template.indent([
-                      "if (err) return reject(err);",
-                      "",
-                      "// Fake fetch response",
-                      "resolve({",
-                      Template.indent(["arrayBuffer() { return buffer; }"]),
-                      "});",
-                    ]),
-                    "});",
-                  ]),
-                  "} catch (err) { reject(err); }",
-                ]),
-                "})",
-              ]);
+        const generateLoadBinaryCode = (path) =>
+          Template.asString([
+            "var wasmPath = __webpack_require__.p + wasmModuleHash + '.module.wasm';",
+            "var req = vscode.workspace.fs.readFile(vscode.Uri.file(wasmPath));",
+          ]);
 
         compilation.hooks.runtimeRequirementInTree
           .for(RuntimeGlobals.instantiateWasm)
@@ -162,7 +108,6 @@ class ReadFileVsCodeWebCompileAsyncWasmPlugin {
               chunk,
               new VsCodeAsyncWasmLoadingRuntimeModule({
                 generateLoadBinaryCode,
-                supportsStreaming: false,
               })
             );
           });

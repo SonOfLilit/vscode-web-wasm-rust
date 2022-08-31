@@ -1,11 +1,7 @@
 export = ReadFileVSCodeWebCompileAsyncWasmPlugin;
 /** @typedef {import("webpack/Compiler")} Compiler */
-type ReadFileOptions = {
-  type?: string;
-  import?: boolean;
-};
 declare class ReadFileVSCodeWebCompileAsyncWasmPlugin {
-  constructor(options?: ReadFileOptions);
+  constructor(type?: string);
   _type: string;
   _import: boolean;
   /**
