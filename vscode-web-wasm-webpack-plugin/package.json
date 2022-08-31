@@ -4,6 +4,8 @@
   "description": "Webpack plugin for loading wasm in a way supported by vscode web extensions",
   "main": "dist/plugin.js",
   "types": "dist/plugin.d.ts",
+  "homepage": "https://github.com/SonOfLilit/vscode-web-wasm-rust/",
+  "repository": "https://github.com/jantimon/vscode-rust-wasm.git",
   "scripts": {
     "build": "tsc -p .",
     "test": "echo \"Error: no test specified\" && exit 1",
