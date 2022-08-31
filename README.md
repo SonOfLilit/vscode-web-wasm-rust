@@ -17,8 +17,13 @@ const wasmPlugin = require("vscode-web-wasm-webpack-plugin");
 
 const webExtensionConfig = {
 ...
+  output: {
+    ...
+    enabledWasmLoadingTypes: ["async-vscode"],
+    wasmLoading: "async-vscode",
+  },
   plugins: [
-...
+    ...
     new wasmPlugin.ReadFileVsCodeWebCompileAsyncWasmPlugin(),
   ],
 ...
@@ -40,5 +45,19 @@ export function activate(context: vscode.ExtensionContext) {
   // ..
 }
 ```
+
+If you use typescipt, you will want to add `webpack` to `tsconfig.json`'s exclude list:
+
+```
+...
+	"exclude": [
+		"node_modules",
+		"webpack",
+		".vscode-test"
+	]
+...
+```
+
+## Talk to me
 
 This was the longest task in the history of my Regex Syntax for Humans project, [Kleenexp](https://github.com/SonOfLilit/kleenexp), longer that writing the compiler or porting it to rust or writing a vscode extension. It took almost a week of banging my head against the wall to find a way to achieve this. So if this was useful to you, please drop me a word to help me feel like I was doing something useful :-)
