@@ -73,7 +73,8 @@ export class ReadFileVsCodeWebCompileAsyncWasmPlugin {
     compiler.hooks.thisCompilation.tap(
       "ReadFileVsCodeWebCompileAsyncWasmPlugin",
       (compilation) => {
-        const globalWasmLoading = compilation.outputOptions.wasmLoading;
+        const { outputOptions, runtimeTemplate } = compilation;
+        const globalWasmLoading = outputOptions.wasmLoading;
         const isEnabledForChunk = (chunk: webpack.Chunk) => {
           const options = chunk.getEntryOptions();
           const wasmLoading =
@@ -85,7 +86,10 @@ export class ReadFileVsCodeWebCompileAsyncWasmPlugin {
         const generateLoadBinaryCode = (wasmModulePath: string) =>
           Template.asString([
             "var wasmPath = __webpack_require__.p + wasmModuleHash + '.module.wasm';",
-            "var req = vscode.workspace.fs.readFile(vscode.Uri.file(wasmPath));",
+            `var req = wasmPath.startsWith('http') ? fetch(wasmPath).then(${runtimeTemplate.returningFunction(
+              "x.arrayBuffer()",
+              "x"
+            )}) : vscode.workspace.fs.readFile(vscode.Uri.file(wasmPath));`,
           ]);
 
         compilation.hooks.runtimeRequirementInTree
