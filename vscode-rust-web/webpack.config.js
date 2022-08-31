@@ -12,6 +12,7 @@
 const path = require("path");
 const webpack = require("webpack");
 const wasmPlugin = require("vscode-web-wasm-webpack-plugin");
+const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 
 /** @type WebpackConfig */
 const webExtensionConfig = {
@@ -66,6 +67,10 @@ const webExtensionConfig = {
       process: "process/browser", // provide a shim for the global `process` variable
     }),
     new wasmPlugin.ReadFileVsCodeWebCompileAsyncWasmPlugin(),
+    new WasmPackPlugin({
+      crateDirectory: path.resolve(__dirname, "../rust-wasm"),
+      forceMode: "production",
+    }),
   ],
   externals: {
     vscode: "commonjs vscode", // ignored because it doesn't exist
